@@ -1,0 +1,41 @@
+# Build unsigned IPA for SpektraFilm Oltra (ios branch)
+# 用法：把这个文件放到 fork 仓库的默认分支 .github/workflows/ 下，
+# 然后在 Actions 页手动触发。产物是未签名 IPA（用 Sideloadly/AltStore 自签安装）。
+name: Build unsigned IPA
+
+on:
+  workflow_dispatch: {}
+
+jobs:
+  build:
+    runs-on: macos-14
+    steps:
+      - name: Checkout ios branch
+        uses: actions/checkout@v4
+        with:
+          ref: ios
+
+      - name: Build (unsigned, Release, iphoneos)
+        run: |
+          set -euo pipefail
+          xcodebuild -project SpektraMobileApp/SpektraMobile.xcodeproj \
+            -scheme SpektraMobile \
+            -configuration Release \
+            -sdk iphoneos \
+            -derivedDataPath build \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGN_IDENTITY="" \
+            build
+
+      - name: Package unsigned IPA
+        run: |
+          set -euo pipefail
+          mkdir -p build/Payload
+          cp -R build/Build/Products/Release-iphoneos/SpektraMobile.app build/Payload/
+          cd build && zip -qr Spektrafilm-unsigned.ipa Payload
+
+      - name: Upload IPA artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Spektrafilm-unsigned-ipa
+          path: build/Spektrafilm-unsigned.ipa
+          retention-days: 7
