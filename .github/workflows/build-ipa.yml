@@ -10,9 +10,10 @@ jobs:
   build:
     runs-on: macos-latest
     steps:
-      - name: Checkout ios branch
+      - name: Checkout ios branch from upstream
         uses: actions/checkout@v4
         with:
+          repository: Ote65/spektraFilmOltra
           ref: ios
 
       - name: Build (unsigned, Release, iphoneos)
