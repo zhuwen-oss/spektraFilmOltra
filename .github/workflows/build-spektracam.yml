@@ -15,8 +15,13 @@ jobs:
           repository: runzeni/SpektraCam
           ref: main
 
-      - name: Show Xcode version
-        run: xcodebuild -version && xcodebuild -showsdks | grep -i iphoneos
+      - name: Select newest available Xcode
+        run: |
+          ls -d /Applications/Xcode*.app | sort -V
+          LATEST=$(ls -d /Applications/Xcode*.app | sort -V | tail -1)
+          echo "Selecting $LATEST"
+          sudo xcode-select -s "$LATEST"
+          xcodebuild -version && xcodebuild -showsdks | grep -i iphoneos
 
       - name: Build (unsigned, Release, iphoneos)
         run: |
