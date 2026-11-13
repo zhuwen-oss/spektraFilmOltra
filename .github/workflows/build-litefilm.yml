@@ -1,0 +1,50 @@
+# Build unsigned IPA for LiteFilm (kveinjay-google/LiteFilm)
+# 产物：未签名 IPA，用 Sideloadly / NB助手 / AltStore 自签安装
+name: Build LiteFilm IPA
+
+on:
+  workflow_dispatch: {}
+
+jobs:
+  build:
+    runs-on: macos-latest
+    steps:
+      - name: Checkout LiteFilm
+        uses: actions/checkout@v4
+        with:
+          repository: kveinjay-google/LiteFilm
+          ref: feature/36-frames
+          submodules: recursive
+
+      - name: Show Xcode version
+        run: xcodebuild -version && xcodebuild -showsdks | grep -i iphoneos
+
+      - name: Build (unsigned, Release, iphoneos)
+        run: |
+          set -euo pipefail
+          xcodebuild -project SpektraFilm.xcodeproj \
+            -scheme SpektraFilm \
+            -configuration Release \
+            -destination 'generic/platform=iOS' \
+            -derivedDataPath build \
+            -jobs 4 \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO \
+            build
+
+      - name: Package unsigned IPA
+        run: |
+          set -euo pipefail
+          PROD=build/Build/Products/Release-iphoneos
+          ls -la "$PROD"
+          APP=$(find "$PROD" -maxdepth 1 -name "*.app" | head -1)
+          echo "Packaging: $APP"
+          mkdir -p build/Payload
+          cp -R "$APP" build/Payload/
+          cd build && zip -qr LiteFilm-unsigned.ipa Payload
+
+      - name: Upload IPA artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: LiteFilm-unsigned-ipa
+          path: build/LiteFilm-unsigned.ipa
+          retention-days: 7
