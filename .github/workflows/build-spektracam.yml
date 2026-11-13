@@ -1,0 +1,44 @@
+# Build unsigned IPA for SpektraCam (runzeni/SpektraCam, main branch)
+# 产物：未签名 IPA，用 Sideloadly / NB助手 / AltStore 自签安装
+name: Build SpektraCam IPA
+
+on:
+  workflow_dispatch: {}
+
+jobs:
+  build:
+    runs-on: macos-latest
+    steps:
+      - name: Checkout from upstream
+        uses: actions/checkout@v4
+        with:
+          repository: runzeni/SpektraCam
+          ref: main
+
+      - name: Show Xcode version
+        run: xcodebuild -version && xcodebuild -showsdks | grep -i iphoneos
+
+      - name: Build (unsigned, Release, iphoneos)
+        run: |
+          set -euo pipefail
+          xcodebuild -project SpektraCam.xcodeproj \
+            -scheme SpektraCam \
+            -configuration Release \
+            -sdk iphoneos \
+            -derivedDataPath build \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGN_IDENTITY="" \
+            build
+
+      - name: Package unsigned IPA
+        run: |
+          set -euo pipefail
+          mkdir -p build/Payload
+          cp -R build/Build/Products/Release-iphoneos/SpektraCam.app build/Payload/
+          cd build && zip -qr SpektraCam-unsigned.ipa Payload
+
+      - name: Upload IPA artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: SpektraCam-unsigned-ipa
+          path: build/SpektraCam-unsigned.ipa
+          retention-days: 7
